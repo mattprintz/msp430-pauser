@@ -1,0 +1,9 @@
+[RB Plugin]
+Loader=python
+Module=pause-plugin
+IAge=1
+Name=Pause plugin
+Description=Pauses playback when a signal is sent
+Authors=Matthew Printz
+Copyright=None
+Website=None
