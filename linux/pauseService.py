@@ -27,8 +27,12 @@ class Watcher(threading.Thread):
             while not self.killed:
                 char = self.dev.read(1)
                 if char:
-                    print "Click"
-                    self.pauser.clicked()
+                    if char == 'U':
+                        print "Click up"
+                        self.pauser.clickUp()
+                    elif char == 'D':
+                        print "Click down"
+                        self.pauser.clickDown()
                     
                 self.dev.flushInput()
                 
@@ -136,9 +140,19 @@ class Pauser(dbus.service.Object):
         self.clicked()
         return True
     
-    @dbus.service.signal(dbus_interface='org.hipokrit.pauser', signature='')
-    def clicked(self):
+    @dbus.service.method('org.hipokrit.pauser', in_signature = '', out_signature = 'b')
+    def clickUp(self):
+        self.clicked(True)
         return True
+    
+    @dbus.service.method('org.hipokrit.pauser', in_signature = '', out_signature = 'b')
+    def clickDown(self):
+        self.clicked(False)
+        return True
+    
+    @dbus.service.signal(dbus_interface='org.hipokrit.pauser', signature='b')
+    def clicked(self, up):
+        return up
 
 
 

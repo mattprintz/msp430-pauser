@@ -25,8 +25,6 @@ class PausePlugin(rb.Plugin):
         rb.Plugin.__init__(self)
         self.player = None
         self.thread = None
-        #self.bus = None
-        #self.wasPlaying = False
 
     def activate(self, shell):
         self.player = shell.get_player()
@@ -54,6 +52,12 @@ class PausePlugin(rb.Plugin):
         print pause_interface
    
     
-    def play_pause(self):
+    def play_pause(self, up=None):
         print "Triggered"
-        self.player.playpause()
+        if up is not None:
+            if up:
+                self.player.play()
+            else:
+                self.player.pause()
+        else:
+            self.player.playpause()
