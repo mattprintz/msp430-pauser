@@ -17,7 +17,7 @@
 
 #define REG_CODE		5617
 
-unsigned int code[]={0x35, 0x36, 0x31, 0x37};
+unsigned char code[]= "5617";
 
 unsigned int TXByte;
 unsigned char BitCnt;
@@ -30,7 +30,6 @@ bool hasReceived; // Lets the program know when a byte is received
 
 bool ADCDone; // ADC Done flag
 unsigned int ADCValue; // Measured ADC Value
-
 
 // Function Definitions
 void Transmit(void);
@@ -54,13 +53,6 @@ void main(void) {
 	
 	P1DIR |= BIT0;
 	P1OUT &= ~BIT0; // Turn off LED at P1.0
-	
-	P2DIR &= ~BTN;
-	P2OUT |= BTN;
-	P2REN |= BTN;
-	P2IES |= BTN;
-	P2IFG &= ~BTN;
-	P2IE |= BTN;
 	
 	
 	isReceiving = false; // Set initial values
@@ -103,9 +95,17 @@ void Receive() {
 		Register();
 		state = STATE_RUNNING;
 	}
+	else if(state == STATE_RUNNING && RXByte == 0x5A) {
+		state = STATE_WAITING;
+	}
+	else if(state == STATE_RUNNING) {
+		TXByte = 0x2B;
+		Transmit();
+	}
 }
 
 void Register() {
+	
 	int i;
 	for(i = 0; i < 4; i++) {
 		TXByte = code[i];
@@ -189,14 +189,3 @@ __interrupt void Timer_A (void) {
 		}
 	}
 }
-
-
-#pragma vector=PORT2_VECTOR
-__interrupt void PORT2_ISR(void) {
-	P2IFG &= ~BTN;
-	P2IES ^= BTN;
-	TXByte = 0x56;
-	Transmit();
-}
-
-
