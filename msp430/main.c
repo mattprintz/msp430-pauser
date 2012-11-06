@@ -4,7 +4,7 @@
 #include "stdlib.h"
 
 #define TXD BIT1							// TXD on P1.1
-#define RXD BIT2							// RXD on P1.2
+#define RXD	BIT2     						// RXD on P1.2
 
 #define BTN BIT3
 
@@ -19,6 +19,9 @@
 
 unsigned char code[] = "5617";
 
+unsigned char up = 'U';
+unsigned char down = 'D';
+
 unsigned int TXByte;
 unsigned char BitCnt;
 unsigned int RXByte;
@@ -28,6 +31,7 @@ unsigned int state = STATE_WAITING;
 bool isReceiving; // Status for when the device is receiving
 bool hasReceived; // Lets the program know when a byte is received
 bool hasClick;
+bool clickDir = 0;
 
 bool ADCDone; // ADC Done flag
 unsigned int ADCValue; // Measured ADC Value
@@ -130,7 +134,12 @@ void Register() {
 void Click() {
 	hasClick = false;
 	
-	TXByte = 0x56;
+	if(clickDir) {
+		TXByte = down;
+	}
+	else {
+		TXByte = up;
+	}
 	Transmit();
 	
 }
@@ -167,8 +176,9 @@ __interrupt void Port_1(void) {
 	} 
 	else if((BTN & P1IFG) == BTN) {
 				
-		P1IFG &= ~BTN; // Clear BTN IFG (interrupt flag)
-		P1IES ^= BTN; //
+		P1IFG &= ~BTN; 	// Clear BTN IFG (interrupt flag)
+		clickDir = P1IES & BTN;
+		P1IES ^= BTN; 	//
 		
 		if(state == STATE_RUNNING) { 
 			hasClick = true;
