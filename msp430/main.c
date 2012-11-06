@@ -4,7 +4,7 @@
 #include "stdlib.h"
 
 #define TXD BIT1							// TXD on P1.1
-#define RXD	BIT2     						// RXD on P1.2
+#define RXD BIT2							// RXD on P1.2
 
 #define BTN BIT3
 
@@ -15,9 +15,9 @@
 #define STATE_SYNCING	0x01
 #define STATE_RUNNING	0x02
 
-#define REG_CODE		5617
+#define REG_CODE		"5617"
 
-unsigned char code[]= "5617";
+unsigned char code[] = "5617";
 
 unsigned int TXByte;
 unsigned char BitCnt;
@@ -27,6 +27,7 @@ unsigned int state = STATE_WAITING;
 
 bool isReceiving; // Status for when the device is receiving
 bool hasReceived; // Lets the program know when a byte is received
+bool hasClick;
 
 bool ADCDone; // ADC Done flag
 unsigned int ADCValue; // Measured ADC Value
@@ -36,6 +37,8 @@ void Transmit(void);
 void Receive(void);
 
 void Register(void);
+
+void Click(void);
 
 void main(void) {
 	
@@ -54,14 +57,22 @@ void main(void) {
 	P1DIR |= BIT0;
 	P1OUT &= ~BIT0; // Turn off LED at P1.0
 	
+	P1DIR &= ~BTN;
+	P1IES |= BTN;
+	P1IFG &= ~BTN;
+	P1IE |= BTN;
 	
 	isReceiving = false; // Set initial values
 	hasReceived = false;
+	hasClick = false;
 	
 	__bis_SR_register(GIE); // interrupts enabled
 	while(1) {
 		if (hasReceived) { // If the device has recieved a value
 			Receive();
+		}
+		if(hasClick) {
+			Click();
 		}
 	}
 }
@@ -95,25 +106,34 @@ void Receive() {
 		Register();
 		state = STATE_RUNNING;
 	}
-	else if(state == STATE_RUNNING && RXByte == 0x5A) {
-		state = STATE_WAITING;
-	}
-	else if(state == STATE_RUNNING) {
+	else if(state == STATE_RUNNING && RXByte != 0x5A) {
 		TXByte = 0x2B;
 		Transmit();
+	}
+	else if (state == STATE_RUNNING && RXByte == 0x5A) {
+		state = STATE_WAITING;
+		P1OUT &= ~BIT0;
 	}
 }
 
 void Register() {
-	
+		
 	int i;
-	for(i = 0; i < 4; i++) {
+	for(i = 0; i < sizeof(code); i++) {
 		TXByte = code[i];
 		Transmit();
 	}
 	
 }
 
+
+void Click() {
+	hasClick = false;
+	
+	TXByte = 0x56;
+	Transmit();
+	
+}
 
 /**
 * ADC interrupt routine. Pulls CPU out of sleep mode for the main loop.
@@ -130,18 +150,32 @@ __interrupt void ADC10_ISR (void) {
 **/
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void) {
-	isReceiving = true;
-
-	P1IE &= ~RXD; // Disable RXD interrupt
-	P1IFG &= ~RXD; // Clear RXD IFG (interrupt flag)
-
-	TACTL = TASSEL_2 + MC_2; // SMCLK, continuous mode
-	CCR0 = TAR; // Initialize compare register
-	CCR0 += Bitime_5; // Set time till first bit
-	CCTL0 = OUTMOD1 + CCIE; // Disable TX and enable interrupts
 	
-	RXByte = 0; // Initialize RXByte
-	BitCnt = 0x9; // Load Bit counter, 8 bits + ST
+	if((RXD & P1IFG) == RXD) {
+		isReceiving = true;
+		
+		P1IE &= ~RXD; // Disable RXD interrupt
+		P1IFG &= ~RXD; // Clear RXD IFG (interrupt flag)
+	
+		TACTL = TASSEL_2 + MC_2; // SMCLK, continuous mode
+		CCR0 = TAR; // Initialize compare register
+		CCR0 += Bitime_5; // Set time till first bit
+		CCTL0 = OUTMOD1 + CCIE; // Disable TX and enable interrupts
+		
+		RXByte = 0; // Initialize RXByte
+		BitCnt = 0x9; // Load Bit counter, 8 bits + ST
+	} 
+	else if((BTN & P1IFG) == BTN) {
+				
+		P1IFG &= ~BTN; // Clear BTN IFG (interrupt flag)
+		P1IES ^= BTN; //
+		
+		if(state == STATE_RUNNING) { 
+			hasClick = true;
+		}
+		
+	}
+	
 }
 
 /**
@@ -189,3 +223,4 @@ __interrupt void Timer_A (void) {
 		}
 	}
 }
+
