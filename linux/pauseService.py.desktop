@@ -1,0 +1,11 @@
+
+[Desktop Entry]
+Type=Application
+Exec=/usr/local/bin/pauseService.py
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[en_US]=PauseService
+Name=PauseService
+Comment[en_US]=
+Comment=
