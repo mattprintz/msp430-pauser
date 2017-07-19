@@ -14,7 +14,7 @@ fi
 
 SERIAL=`udevadm info -a -p $(udevadm info -q path -n /dev/ttyACM?) | grep '{serial}' | head -n 1 | sed 's/.*"\(.*\)".*/\1/'`
 
-UDEV='ATTRS{idVendor}=="0451", ATTRS{idProduct}=="f432", ATTRS{serial}=="'$SERIAL'", SUBSYSTEM=="tty", MODE="0666", GROUP="plugdev", NAME="pauser"'
+UDEV='ATTRS{idVendor}=="0451", ATTRS{idProduct}=="f432", ATTRS{serial}=="'$SERIAL'", SUBSYSTEM=="tty", MODE="0666", GROUP="plugdev", SYMLINK+="pauser"'
 
 
 echo $UDEV > /etc/udev/rules.d/48-pauser.rules
